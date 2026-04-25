@@ -1,0 +1,20 @@
+# Rust build artifacts
+/target/
+
+# Database (user data)
+library.db
+
+# Editor files
+*.swp
+*.swo
+*~
+
+# VSCode
+.vscode/
+
+# JetBrains
+.idea/
+
+# OS junk
+.DS_Store
+Thumbs.db
