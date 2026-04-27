@@ -6,6 +6,7 @@ use cli::{Cli, Commands};
 use std::io::{self, Read};
 use directories::ProjectDirs;
 use std::path::PathBuf;
+use std::fs;
 
 fn get_db_path() -> PathBuf {
     let proj_dirs = ProjectDirs::from("", "", "bark")
@@ -44,6 +45,24 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         Commands::Show { id } => {
             let bib = db::get_reference(&conn, &id)?;
             println!("{}", bib);
+        }
+
+        Commands::Export => {
+            let filename = "references.bib";
+            let mut content = String::new();
+            
+            // Fill content
+            let refs = db::list_references(&conn)?;
+            for (id, _preview) in refs {
+                let bib = db::get_reference(&conn, &id)?;
+                content.push_str(&bib);
+
+                // Break line
+                content.push_str("\n\n");
+            }
+
+            // Save file
+            fs::write(filename, content)?;
         }
     }
 

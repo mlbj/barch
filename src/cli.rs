@@ -12,4 +12,5 @@ pub enum Commands {
     Add,
     List,
     Show { id: String },
+    Export
 }
