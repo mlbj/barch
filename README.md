@@ -6,6 +6,8 @@ BibTex entries and associated files.
 ### Build instructions
 
 Run
-```bash cargo install --path .```
+```bash
+cargo install --path . --force
+```
 This will compile in release mode and
 install the binary to `~/.cargo/bin/bark`.
