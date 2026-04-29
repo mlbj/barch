@@ -110,3 +110,25 @@ fn get_or_create_tag(conn: &Connection, name: &str) -> Result<String> {
 
     Ok(id)
 }
+
+pub fn get_tags_for_reference(conn: &Connection, reference_id: &str) -> Result<Vec<String>> {
+    let mut stmt = conn.prepare(
+        "
+        SELECT t.name
+        FROM tags t
+        INNER JOIN reference_tags rt ON t.id = rt.tag_id
+        WHERE rt.reference_id = ?1
+        "
+    )?;
+
+    let rows = stmt.query_map([reference_id], |row| {
+        row.get(0)
+    })?;
+
+    let mut tags = Vec::new();
+    for tag in rows {
+        tags.push(tag?);
+    }
+
+    Ok(tags)
+}
