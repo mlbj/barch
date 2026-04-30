@@ -11,7 +11,7 @@ pub struct Cli {
 pub enum Commands {
     Add,
     List,
-    Show { id: String },
+    Show { input: String },
     Export,
-    Tag { id: String, tag: String }
+    Tag { input: String, tag: String }
 }

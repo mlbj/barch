@@ -43,7 +43,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
         }
 
-        Commands::Show { id } => {
+        Commands::Show { input } => {
+            let id = db::resolve_reference(&conn, &input)?;
             let bib = db::get_reference(&conn, &id)?;
             println!("{}", bib);
         }
@@ -66,7 +67,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             fs::write(filename, content)?;
         }
 
-        Commands::Tag { id, tag } => {
+        Commands::Tag { input, tag } => {
+            let id = db::resolve_reference(&conn, &input)?;
             db::add_tag_to_reference(&conn, &id, &tag)?;
         }
     }

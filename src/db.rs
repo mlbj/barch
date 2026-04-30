@@ -206,3 +206,44 @@ fn parse_bibtex_header(bibtex: &str) -> Option<(String, String)> {
 
     Some((entry_type, entry_key))
 }
+
+pub fn resolve_reference(conn: &Connection, input: &str) -> Result<String> {
+    // 1. Exact match on entry_key
+    let mut stmt = conn.prepare(
+        "SELECT id FROM refs WHERE entry_key = ?1"
+    )?;
+
+    let mut rows = stmt.query([input])?;
+    if let Some(row) = rows.next()? {
+        return row.get(0);
+    }
+
+    // 2. Exact match on full UUID
+    let mut stmt = conn.prepare(
+        "SELECT id FROM refs WHERE id = ?1"
+    )?;
+
+    let mut rows = stmt.query([input])?;
+    if let Some(row) = rows.next()? {
+        return row.get(0);
+    }
+
+    // 3. Prefix match (short UUID)
+    let mut stmt = conn.prepare(
+        "SELECT id FROM refs WHERE id LIKE ?1"
+    )?;
+
+    let pattern = format!("{}%", input);
+    let mut rows = stmt.query([pattern])?;
+
+    let mut matches = Vec::new();
+    while let Some(row) = rows.next()? {
+        matches.push(row.get::<_, String>(0)?);
+    }
+
+    match matches.len() {
+        0 => Err(rusqlite::Error::QueryReturnedNoRows),
+        1 => Ok(matches[0].clone()),
+        _ => Err(rusqlite::Error::InvalidQuery), // ambiguous
+    }
+}
