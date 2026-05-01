@@ -37,9 +37,29 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
         Commands::List => {
             let refs = db::list_references(&conn)?;
-            for (id, preview) in refs {
+            
+            // Compute column widths
+            let max_key = refs.iter().map(|(_, key, _, _)| key.len()).max().unwrap_or(0);
+            let max_id = 8;
+
+            for (id, key, title, tags) in refs {
                 let short_id = &id[..8];
-                println!("({})  {}", short_id, preview);
+                
+                let title = title.unwrap_or_else(|| "<no title>".to_string());
+
+                let tag_str = tags
+                    .map(|t| format!(" [{}]", t.replace(",", ", ")))
+                    .unwrap_or_default();
+
+                println!(
+                    "{:width_id$}  {:width_key$}  {}{}",
+                    short_id,
+                    key,
+                    title,
+                    tag_str,
+                    width_id = max_id,
+                    width_key = max_key,
+                );
             }
         }
 
@@ -55,13 +75,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             
             // Fill content
             let refs = db::list_references(&conn)?;
-            for (id, _preview) in refs {
+            for (id, _, _, _) in refs {
                 let bib = db::get_reference(&conn, &id)?;
                 content.push_str(&bib);
-
-                // Break line
                 content.push_str("\n\n");
             }
+
 
             // Save file
             fs::write(filename, content)?;

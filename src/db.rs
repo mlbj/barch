@@ -62,7 +62,10 @@ pub fn add_reference(conn: &Connection, bibtex: &str) -> Result<String> {
     Ok(id)
 }
 
-pub fn list_references(conn: &Connection) -> Result<Vec<(String, String)>> {
+pub fn list_references(conn: &Connection) -> Result<Vec<(String,
+                                                         String,
+                                                         Option<String>,
+                                                         Option<String>)>> {
     let mut stmt = conn.prepare(
         "
         SELECT
@@ -82,21 +85,11 @@ pub fn list_references(conn: &Connection) -> Result<Vec<(String, String)>> {
     let rows = stmt.query_map([], |row| {
         let id: String = row.get(0)?;
         let key: String = row.get(1)?;
-        let ty: String = row.get(2)?;
+        let _ty: String = row.get(2)?;
         let title: Option<String> = row.get(3)?;
         let tags: Option<String> = row.get(4)?;
 
-        let mut preview = match title {
-            Some(t) => format!("{}:  {}", key, t),
-            None => format!("@{}{{{},...}}", ty, key)
-        };
-
-        if let Some(tag_str) = tags {
-            let formatted = tag_str.replace(",", ", ");
-            preview.push_str(&format!(" [{}]", formatted));
-        }
-
-        Ok((id, preview))
+        Ok((id, key, title, tags))
     })?;
 
     let mut result = Vec::new();
@@ -260,7 +253,7 @@ pub fn import_bibtex(conn: &Connection , path: &str) -> Result<()> {
 
     for entry in entries {
         // Validate header before inserting
-        let (etry_type, entry_key) = match parse_bibtex_header(&entry) {
+        let (_entry_type, entry_key) = match parse_bibtex_header(&entry) {
             Some(v) => v,
             None => {
                 eprintln!("Skipping invalid entry");
