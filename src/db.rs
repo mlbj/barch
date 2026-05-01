@@ -44,22 +44,21 @@ pub fn init_db(path: &str) -> Result<Connection> {
     Ok(conn)
 }
 
-pub fn add_reference(conn: &Connection, bibtex: &str) -> Result<String> {
-    let id = Uuid::new_v4().to_string();
-
-    let (entry_type, entry_key) =
-        parse_bibtex_header(bibtex)
-            .ok_or_else(|| rusqlite::Error::InvalidQuery)?;
-
-    let title = extract_field_bibtex(bibtex, "title");
-
+pub fn insert_reference(
+    conn: &Connection,
+    id: &str,
+    bibtex: &str,
+    entry_type: &str,
+    entry_key: &str,
+    title: Option<&str>,
+) -> Result<()> {
     conn.execute(
         "INSERT INTO refs (id, bibtex, entry_type, entry_key, title)
         VALUES (?1, ?2, ?3, ?4, ?5)",
         (&id, bibtex, &entry_type, &entry_key, &title),
     )?;
 
-    Ok(id)
+    Ok(())
 }
 
 pub fn list_references(
@@ -167,44 +166,6 @@ pub fn get_tags_for_reference(conn: &Connection, reference_id: &str) -> Result<V
     Ok(tags)
 }
 
-
-fn extract_field_bibtex(bibtex: &str, field: &str) -> Option<String> {
-    for line in bibtex.lines() {
-        let line = line.trim();
-
-        if line.to_lowercase().starts_with(&format!("{} =", field)) {
-            let value = line.split('=').nth(1)?.trim();
-
-            // Remove comma/braces crudely
-            return Some(
-                value.trim_matches(|c| c == '{' || c == '}' || c == ',')
-                     .trim()
-                     .to_string()
-                );
-        }
-    }
-    None
-}
-
-fn parse_bibtex_header(bibtex: &str) -> Option<(String, String)> {
-    let first_line = bibtex.lines().next()?.trim();
-
-    // Expect something like: @book{key,
-    if !first_line.starts_with('@') {
-        return None;
-    }
-
-    let after_at = &first_line[1..];
-    let mut parts = after_at.splitn(2, '{');
-
-    let entry_type = parts.next()?.trim().to_string();
-    let rest = parts.next()?;
-
-    let entry_key = rest.split(',').next()?.trim().to_string();
-
-    Some((entry_type, entry_key))
-}
-
 pub fn resolve_reference(conn: &Connection, input: &str) -> Result<String> {
     // 1. Exact match on entry_key
     let mut stmt = conn.prepare(
@@ -244,71 +205,4 @@ pub fn resolve_reference(conn: &Connection, input: &str) -> Result<String> {
         1 => Ok(matches[0].clone()),
         _ => Err(rusqlite::Error::InvalidQuery), // ambiguous
     }
-}
-
-pub fn import_bibtex(conn: &Connection , path: &str) -> Result<()> {
-    let content = std::fs::read_to_string(path)
-        .map_err(|_| rusqlite::Error::InvalidQuery)?;
-
-    let entries = split_bibtex_entries(&content);
-
-    let mut added = 0;
-    let mut skipped = 0;
-
-    for entry in entries {
-        // Validate header before inserting
-        let (_entry_type, entry_key) = match parse_bibtex_header(&entry) {
-            Some(v) => v,
-            None => {
-                eprintln!("Skipping invalid entry");
-                skipped += 1;
-                continue
-            }
-        };
-
-        match add_reference(conn, &entry) {
-            Ok(_) => {
-                println!("[Ok] {}", entry_key);
-                added += 1;
-            }
-            Err(e) => {
-                eprintln!("[ERROR] {}: {}", entry_key, e);
-                skipped += 1;
-            }
-        }
-    }
-    
-    println!("\nImported: {} | Skipped: {}", added, skipped);
-    Ok(())
-}
-
-fn split_bibtex_entries(input: &str) -> Vec<String> {
-    let mut entries = Vec::new();
-    let mut current = String::new();
-    let mut brace_level = 0;
-    let mut in_entry = false;
-
-    for c in input.chars() {
-        if c == '@' && !in_entry {
-            in_entry = true;
-            current.clear();
-        }
-
-        if in_entry {
-            current.push(c);
-
-            if c == '{' {
-                brace_level += 1;
-            } else if c == '}' {
-                brace_level -= 1;
-
-                if brace_level == 0 {
-                    entries.push(current.trim().to_string());
-                    in_entry = false;
-                }
-            }
-        }
-    }
-
-    entries
 }
