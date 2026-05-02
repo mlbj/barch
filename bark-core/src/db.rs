@@ -167,7 +167,7 @@ pub fn get_tags_for_reference(conn: &Connection, reference_id: &str) -> Result<V
 }
 
 pub fn resolve_reference(conn: &Connection, input: &str) -> Result<String> {
-    // 1. Exact match on entry_key
+    // Exact match on entry_key
     let mut stmt = conn.prepare(
         "SELECT id FROM refs WHERE entry_key = ?1"
     )?;
@@ -177,7 +177,7 @@ pub fn resolve_reference(conn: &Connection, input: &str) -> Result<String> {
         return row.get(0);
     }
 
-    // 2. Exact match on full UUID
+    // Exact match on full UUID
     let mut stmt = conn.prepare(
         "SELECT id FROM refs WHERE id = ?1"
     )?;
@@ -187,7 +187,7 @@ pub fn resolve_reference(conn: &Connection, input: &str) -> Result<String> {
         return row.get(0);
     }
 
-    // 3. Prefix match (short UUID)
+    // Prefix match (short UUID)
     let mut stmt = conn.prepare(
         "SELECT id FROM refs WHERE id LIKE ?1"
     )?;
