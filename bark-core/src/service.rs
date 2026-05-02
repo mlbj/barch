@@ -82,3 +82,33 @@ pub fn import_bibtex(conn: &Connection, path: &str) -> Result<ImportResult> {
 
     Ok(ImportResult { added, skipped })
 }
+
+pub fn resolve_reference(conn: &Connection, input: &str) -> Result<String> {
+    db::resolve_reference(conn, input)
+}
+
+pub fn get_reference(conn: &Connection, input: &str) -> Result<String> {
+    let id = db::resolve_reference(conn, input)?;
+    db::get_reference(conn, &id)
+}
+
+pub fn add_tag(conn: &Connection, input: &str, tag: &str) -> Result<()> {
+    let id = db::resolve_reference(conn, input)?;
+    db::add_tag_to_reference(conn, &id, tag)
+}
+
+pub fn export_references(
+    conn: &Connection,
+    tag: Option<&str>,
+) -> Result<String> {
+    let refs = list_references(conn, tag)?;
+
+    let mut content = String::new();
+    for r in refs {
+        let bib = db::get_reference(conn, &r.id)?;
+        content.push_str(&bib);
+        content.push_str("\n\n");
+    }
+
+    Ok(content)
+}

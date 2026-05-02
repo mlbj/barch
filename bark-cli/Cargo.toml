@@ -1,0 +1,14 @@
+[package]
+name = "bark-cli"
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+
+[dependencies]
+bark-core = { path = "../bark-core" }
+clap = { version = "4", features = ["derive"] }
+directories = "5"
+
+[[bin]]
+name = "bark"
+path = "src/main.rs"

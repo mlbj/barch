@@ -1,0 +1,10 @@
+[package]
+name = "bark-core"
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+
+[dependencies]
+rusqlite = "0.31"
+uuid = { version = "1", features = ["v4"] }
+sha2 = "0.10"

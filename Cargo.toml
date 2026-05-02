@@ -1,12 +1,5 @@
-[package]
-name = "bark"
-version = "0.1.0"
-edition = "2024"
-license = "MIT"
-
-[dependencies]
-rusqlite = "0.31"
-uuid = { version = "1", features = ["v4"] }
-sha2 = "0.10"
-clap = { version = "4", features = ["derive"] }
-directories = "5"
+[workspace]
+members = [
+    "bark-core",
+    "bark-cli"
+]
