@@ -112,3 +112,21 @@ pub fn export_references(
 
     Ok(content)
 }
+
+pub fn add_content(
+    conn: &Connection,
+    input: &str,
+    kind: &str,
+    location: &str,
+) -> Result<()> {
+    let id = db::resolve_reference(conn, input)?;
+    db::ad_content(conn, &id, kind, location)
+}
+
+pub fn get_content(
+    conn: &Connection,
+    input: &str,
+) -> Result<(String, String)> {
+    let id = db::resolve_reference(conn, input)?;
+    db::get_content(conn, &id)
+}
