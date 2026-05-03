@@ -2,6 +2,8 @@ use clap::{Parser, Subcommand};
 
 use std::io::{self, Read};
 use std::fs;
+use std::env;
+use std::path::PathBuf;
 
 use bark_core::{service, Bark};
 
@@ -155,6 +157,22 @@ impl Cli {
                     "url" | "pdf" | "local" => {
                         std::process::Command::new("xdg-open")
                             .arg(&location)
+                            .spawn()?;
+                    }
+                    "ssh" => {
+                        // location: user@host:/path/to/file
+                        let mut parts = location.splitn(2, ":");
+                        let host = parts.next().ok_or("Invalid ssh location")?;
+                        let path = parts.next().ok_or("Invalid ssh location")?;
+
+                        // Copy file and open locally
+                        let tmp_path: PathBuf = env::temp_dir().join("bark_tmp.pdf");
+                        std::process::Command::new("scp")
+                            .arg(format!("{}:{}", host, path))
+                            .arg(&tmp_path)
+                            .status()?;
+                        std::process::Command::new("xdg-open")
+                            .arg(&tmp_path)
                             .spawn()?;
                     }
                     _ => {
