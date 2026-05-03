@@ -150,7 +150,7 @@ impl Cli {
                 let (kind, location) = service::get_content(conn, &input)?;
 
                 match kind.as_str() {
-                    "url" | "pdf" | "local" => {
+                    "url" | "local" => {
                         std::process::Command::new("xdg-open")
                             .arg(&location)
                             .spawn()?;
