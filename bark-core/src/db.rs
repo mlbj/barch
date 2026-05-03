@@ -39,10 +39,10 @@ pub fn init_db(path: &str) -> Result<Connection> {
             FOREIGN KEY (tag_id) REFERENCES tags(id)
         );
 
-        CREATE TABLE IF NOT EXISTS contents (
+        CREATE TABLE IF NOT EXISTS content (
             id TEXT PRIMARY KEY,
-            reference_id TEXT NOT NULL,
-            Kind TEXT NOT NULL,
+            reference_id TEXT NOT NULL UNIQUE,
+            kind TEXT NOT NULL,
             location TEXT NOT NULL,
             FOREIGN KEY (reference_id) REFERENCES refs(id)
         );
@@ -224,32 +224,32 @@ pub fn add_content(
     let id = Uuid::new_v4().to_string();
 
     conn.execute(
-        "INSERT INTO CONTENTS (id, reference_id, kind, location)
-         VALUES (?1, ?2, ?3, ?4)",
+        "INSERT INTO content (id, reference_id, kind, location)
+         VALUES (?1, ?2, ?3, ?4)
+         ON CONFLICT(reference_id) DO UPDATE SET
+             kind = excluded.kind,
+             location = excluded.location",
          (&id, reference_id, kind, location),
     )?;
 
     Ok(())
 }
 
-pub fn get_contents(
+pub fn get_content(
     conn: &Connection,
     reference_id: &str,
-) -> Result<Vec<(String, String)>> {
+) -> Result<(String, String)> {
     let mut stmt = conn.prepare(
-        "SELECT kind, location FROM contents WHERE reference_id = ?1"
+        "SELECT kind, location FROM content WHERE reference_id = ?1"
     )?;
 
-    let rows = stmt.query_map([reference_id], |row| {
+    let mut rows = stmt.query([reference_id])?;
+
+    if let Some(row) = rows.next()? {
         let kind: String = row.get(0)?;
         let location: String = row.get(1)?;
         Ok((kind, location))
-    })?;
-
-    let mut result = Vec::new();
-    for r in rows {
-        result.push(r?);
+    } else {
+        Err(rusqlite::Error::QueryReturnedNoRows)
     }
-
-    Ok(result)
 }

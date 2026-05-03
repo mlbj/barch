@@ -120,7 +120,7 @@ pub fn add_content(
     location: &str,
 ) -> Result<()> {
     let id = db::resolve_reference(conn, input)?;
-    db::ad_content(conn, &id, kind, location)
+    db::add_content(conn, &id, kind, location)
 }
 
 pub fn get_content(

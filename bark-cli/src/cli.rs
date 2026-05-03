@@ -53,6 +53,25 @@ pub enum Commands {
         /// Tag name
         tag: String
     },
+    
+    /// Attach content to a reference
+    Attach {
+        /// Entry key, full id or short id
+        input: String,
+
+        /// Content location
+        location: String,
+        
+        /// Content kind
+        #[arg(short, long, default_value = "pdf")]
+        kind: String
+    },
+    
+    /// Open reference content
+    Open {
+        /// Entry key, full id or short id
+        input: String,
+    },
 }
 
 impl Cli {
@@ -99,6 +118,16 @@ impl Cli {
             Commands::Show { input } => {
                 let bib = service::get_reference(conn, &input)?;
                 println!("{}", bib);
+
+                match service::get_content(conn, &input) {
+                    Ok((kind, location)) => {
+                        println!("\n---");
+                        println!("content: {} ({})", location, kind);
+                    }
+                    Err(_) => {
+                        // No content (stay silent)
+                    }
+                }
             }
 
             Commands::Export { tag } => {
@@ -113,6 +142,25 @@ impl Cli {
 
             Commands::Tag { input, tag } => {
                 service::add_tag(conn, &input, &tag)?;
+            }
+
+            Commands::Attach{ input, kind, location } => {
+                service::add_content(conn, &input, &kind, &location)?;
+            }
+
+            Commands::Open { input } => {
+                let (kind, location) = service::get_content(conn, &input)?;
+
+                match kind.as_str() {
+                    "url" | "pdf" | "local" => {
+                        std::process::Command::new("xdg-open")
+                            .arg(&location)
+                            .spawn()?;
+                    }
+                    _ => {
+                        eprintln!("Unknown content kind: {}", kind)
+                    }
+                }
             }
         }
 
