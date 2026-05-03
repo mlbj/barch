@@ -63,10 +63,6 @@ pub enum Commands {
 
         /// Content location
         location: String,
-        
-        /// Content kind
-        #[arg(short, long, default_value = "pdf")]
-        kind: String
     },
     
     /// Open reference content
@@ -146,8 +142,8 @@ impl Cli {
                 service::add_tag(conn, &input, &tag)?;
             }
 
-            Commands::Attach{ input, kind, location } => {
-                service::add_content(conn, &input, &kind, &location)?;
+            Commands::Attach{ input, location } => {
+                service::add_content(conn, &input, &location)?;
             }
 
             Commands::Open { input } => {
