@@ -112,3 +112,33 @@ pub fn export_references(
 
     Ok(content)
 }
+
+fn infer_kind(location: &str) -> &str {
+    if location.starts_with("http://") || location.starts_with("https://") {
+        "url"
+    } else if location.contains('@') && location.contains(':') {
+        // Simple ssh heuristic for now
+        "ssh"
+    } else {
+        "local"
+    }
+}
+
+pub fn add_content(
+    conn: &Connection,
+    input: &str,
+    location: &str,
+) -> Result<()> {
+    let id = db::resolve_reference(conn, input)?;
+    let kind = infer_kind(location);
+
+    db::add_content(conn, &id, kind, location)
+}
+
+pub fn get_content(
+    conn: &Connection,
+    input: &str,
+) -> Result<(String, String)> {
+    let id = db::resolve_reference(conn, input)?;
+    db::get_content(conn, &id)
+}

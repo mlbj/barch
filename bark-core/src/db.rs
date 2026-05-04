@@ -38,6 +38,14 @@ pub fn init_db(path: &str) -> Result<Connection> {
             FOREIGN KEY (reference_id) REFERENCES refs(id),
             FOREIGN KEY (tag_id) REFERENCES tags(id)
         );
+
+        CREATE TABLE IF NOT EXISTS content (
+            id TEXT PRIMARY KEY,
+            reference_id TEXT NOT NULL UNIQUE,
+            kind TEXT NOT NULL,
+            location TEXT NOT NULL,
+            FOREIGN KEY (reference_id) REFERENCES refs(id)
+        );
         "
     )?;
 
@@ -204,5 +212,44 @@ pub fn resolve_reference(conn: &Connection, input: &str) -> Result<String> {
         0 => Err(rusqlite::Error::QueryReturnedNoRows),
         1 => Ok(matches[0].clone()),
         _ => Err(rusqlite::Error::InvalidQuery), // ambiguous
+    }
+}
+
+pub fn add_content(
+    conn: &Connection,
+    reference_id: &str,
+    kind: &str,
+    location: &str,
+) -> Result<()> {
+    let id = Uuid::new_v4().to_string();
+
+    conn.execute(
+        "INSERT INTO content (id, reference_id, kind, location)
+         VALUES (?1, ?2, ?3, ?4)
+         ON CONFLICT(reference_id) DO UPDATE SET
+             kind = excluded.kind,
+             location = excluded.location",
+         (&id, reference_id, kind, location),
+    )?;
+
+    Ok(())
+}
+
+pub fn get_content(
+    conn: &Connection,
+    reference_id: &str,
+) -> Result<(String, String)> {
+    let mut stmt = conn.prepare(
+        "SELECT kind, location FROM content WHERE reference_id = ?1"
+    )?;
+
+    let mut rows = stmt.query([reference_id])?;
+
+    if let Some(row) = rows.next()? {
+        let kind: String = row.get(0)?;
+        let location: String = row.get(1)?;
+        Ok((kind, location))
+    } else {
+        Err(rusqlite::Error::QueryReturnedNoRows)
     }
 }

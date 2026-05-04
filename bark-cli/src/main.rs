@@ -1,11 +1,9 @@
 use clap::Parser;
-use bark_core::{service, Bark};
+use bark_core::Bark;
 
 mod cli;
-use cli::{Cli, Commands};
+use cli::Cli;
 
-use std::io::{self, Read};
-use std::fs;
 use directories::ProjectDirs;
 use std::path::PathBuf;
 

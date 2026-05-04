@@ -2,6 +2,8 @@ use clap::{Parser, Subcommand};
 
 use std::io::{self, Read};
 use std::fs;
+use std::env;
+use std::path::PathBuf;
 
 use bark_core::{service, Bark};
 
@@ -53,6 +55,21 @@ pub enum Commands {
         /// Tag name
         tag: String
     },
+    
+    /// Attach content to a reference
+    Attach {
+        /// Entry key, full id or short id
+        input: String,
+
+        /// Content location
+        location: String,
+    },
+    
+    /// Open reference content
+    Open {
+        /// Entry key, full id or short id
+        input: String,
+    },
 }
 
 impl Cli {
@@ -99,6 +116,16 @@ impl Cli {
             Commands::Show { input } => {
                 let bib = service::get_reference(conn, &input)?;
                 println!("{}", bib);
+
+                match service::get_content(conn, &input) {
+                    Ok((kind, location)) => {
+                        println!("\n---");
+                        println!("content: {} ({})", location, kind);
+                    }
+                    Err(_) => {
+                        // No content (stay silent)
+                    }
+                }
             }
 
             Commands::Export { tag } => {
@@ -113,6 +140,41 @@ impl Cli {
 
             Commands::Tag { input, tag } => {
                 service::add_tag(conn, &input, &tag)?;
+            }
+
+            Commands::Attach{ input, location } => {
+                service::add_content(conn, &input, &location)?;
+            }
+
+            Commands::Open { input } => {
+                let (kind, location) = service::get_content(conn, &input)?;
+
+                match kind.as_str() {
+                    "url" | "local" => {
+                        std::process::Command::new("xdg-open")
+                            .arg(&location)
+                            .spawn()?;
+                    }
+                    "ssh" => {
+                        // location: user@host:/path/to/file
+                        let mut parts = location.splitn(2, ":");
+                        let host = parts.next().ok_or("Invalid ssh location")?;
+                        let path = parts.next().ok_or("Invalid ssh location")?;
+
+                        // Copy file and open locally
+                        let tmp_path: PathBuf = env::temp_dir().join("bark_tmp.pdf");
+                        std::process::Command::new("scp")
+                            .arg(format!("{}:{}", host, path))
+                            .arg(&tmp_path)
+                            .status()?;
+                        std::process::Command::new("xdg-open")
+                            .arg(&tmp_path)
+                            .spawn()?;
+                    }
+                    _ => {
+                        eprintln!("Unknown content kind: {}", kind)
+                    }
+                }
             }
         }
 
