@@ -69,6 +69,17 @@ pub fn insert_reference(
     Ok(())
 }
 
+pub fn remove_reference(conn: &Connection, id: &str) -> Result<()> {
+    // Delete relations first
+    conn.execute("DELETE FROM reference_tags where reference_id = ?1", [id])?;
+    conn.execute("DELETE FROM content WHERE reference_id = ?1", [id])?;
+
+    // Finally delete the reference
+    conn.execute("DELETE FROM refs WHERE id = ?1", [id])?;
+
+    Ok(())
+}
+
 pub fn list_references(
     conn: &Connection,
     tag: Option<&str>,

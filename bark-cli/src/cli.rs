@@ -22,6 +22,12 @@ pub enum Commands {
     /// Add a new reference (reads BibTeX from stdin)
     Add,
 
+    /// Remove a reference 
+    Rm {
+        /// Entry key, full id or short id
+        input: String,
+    },
+
     /// List stored references
     List {
         /// Filter by tag
@@ -85,6 +91,10 @@ impl Cli {
 
                 let id = service::add_reference(conn, &input)?;
                 println!("Saved as {}", id);
+            }
+
+            Commands::Rm { input } => {
+                service::remove_reference(conn, &input)?;
             }
 
             Commands::List { tag } => {

@@ -32,6 +32,15 @@ pub fn add_reference(conn: &Connection, bibtex: &str) -> Result<String> {
     Ok(id)
 }
 
+pub fn remove_reference(
+    conn: &Connection,
+    input: &str,
+) -> Result<()> {
+    let id = db::resolve_reference(conn, input)?;
+    db::remove_reference(conn, &id)
+}
+
+
 pub fn list_references(
     conn: &Connection,
     tag: Option<&str>,
