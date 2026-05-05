@@ -94,7 +94,7 @@ pub fn get_reference(conn: &Connection, input: &str) -> Result<String> {
 
 pub fn add_tag(conn: &Connection, input: &str, tag: &str) -> Result<()> {
     let id = db::resolve_reference(conn, input)?;
-    db::add_tag_to_reference(conn, &id, tag)
+    db::insert_tag(conn, &id, tag)
 }
 
 pub fn export_references(
@@ -132,7 +132,7 @@ pub fn add_content(
     let id = db::resolve_reference(conn, input)?;
     let kind = infer_kind(location);
 
-    db::add_content(conn, &id, kind, location)
+    db::insert_content(conn, &id, kind, location)
 }
 
 pub fn get_content(

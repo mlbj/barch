@@ -119,9 +119,9 @@ pub fn get_reference(conn: &Connection, id: &str) -> Result<String> {
     )
 }
 
-pub fn add_tag_to_reference(conn: &Connection,
-                            reference_id: &str,
-                            tag_name: &str) -> Result<()> {
+pub fn insert_tag(conn: &Connection,
+                   reference_id: &str,
+                   tag_name: &str) -> Result<()> {
     // Get or create tag
     let tag_id = get_or_create_tag(conn, tag_name)?;
 
@@ -215,7 +215,7 @@ pub fn resolve_reference(conn: &Connection, input: &str) -> Result<String> {
     }
 }
 
-pub fn add_content(
+pub fn insert_content(
     conn: &Connection,
     reference_id: &str,
     kind: &str,
