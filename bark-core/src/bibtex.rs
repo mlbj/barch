@@ -2,15 +2,16 @@ pub fn extract_field_bibtex(bibtex: &str, field: &str) -> Option<String> {
     for line in bibtex.lines() {
         let line = line.trim();
 
-        if line.to_lowercase().starts_with(&format!("{} =", field)) {
-            let value = line.split('=').nth(1)?.trim();
-
-            // Remove comma/braces crudely
-            return Some(
-                value.trim_matches(|c| c == '{' || c == '}' || c == ',')
-                     .trim()
-                     .to_string()
+        if let Some((key, value)) = line.split_once('=') {
+            if key.trim().eq_ignore_ascii_case(field) {
+                return Some(
+                    value
+                        .trim()
+                        .trim_matches(|c| c == '{' || c == '}' || c == ',')
+                        .trim()
+                        .to_string(),
                 );
+            }
         }
     }
     None
