@@ -8,3 +8,5 @@ license = "MIT"
 rusqlite = "0.31"
 uuid = { version = "1", features = ["v4"] }
 sha2 = "0.10"
+serde = { version = "1", features = ["derive"] }
+toml = "0.8"
