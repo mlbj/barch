@@ -155,12 +155,25 @@ impl Cli {
             }
 
             Commands::Import { filename, toml } => {
+                // Force TOML import
                 if toml {
                     service::import_toml(conn, &filename)?;
                     println!("Imported TOML snapshot");
-                } else {
+                    return Ok(());
+                }
+                
+                // Try to guess by extension or fail loud
+                if filename.ends_with(".toml") {
+                    service::import_toml(conn, &filename)?;
+                    println!("Imported TOML snapshop");
+                } else if filename.ends_with(".bib") {
                     let result = service::import_bibtex(conn, &filename)?;
                     println!("Imported: {} | Skipped: {}", result.added, result.skipped);
+                } else {
+                    return Err(format!(
+                        "Could not infer format from '{}'. Use --toml or provide a .bib/.toml file",
+                        filename
+                    ).into());
                 }
             }
 
