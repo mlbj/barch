@@ -4,6 +4,8 @@ use bark_core::Bark;
 mod cli;
 use cli::Cli;
 
+mod sync;
+
 use directories::ProjectDirs;
 use std::path::PathBuf;
 

@@ -3,9 +3,12 @@ use clap::{Parser, Subcommand};
 use std::io::{self, Read};
 use std::fs;
 use std::env;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
+use std::process::Command;
 
 use bark_core::{service, Bark};
+
+use crate::sync;
 
 #[derive(Parser)]
 #[command(name = "bark",
@@ -82,6 +85,19 @@ pub enum Commands {
         /// Entry key, full id or short id
         input: String,
     },
+
+    /// Sync bark library using a git repository
+    Sync {
+        /// pull or push actions
+        #[command(subcommand)]
+        action: SyncAction,
+    },
+}
+
+#[derive(Subcommand)]
+pub enum SyncAction {
+    Pull,
+    Push,
 }
 
 impl Cli {
@@ -161,7 +177,7 @@ impl Cli {
                     println!("Imported TOML snapshot");
                     return Ok(());
                 }
-                
+
                 // Try to guess by extension or fail loud
                 if filename.ends_with(".toml") {
                     service::import_toml(conn, &filename)?;
@@ -213,6 +229,13 @@ impl Cli {
                     _ => {
                         eprintln!("Unknown content kind: {}", kind)
                     }
+                }
+            }
+
+            Commands::Sync { action } => {
+                match action {
+                    SyncAction::Pull => sync::pull(bark)?,
+                    SyncAction::Push => sync::push(bark)?,
                 }
             }
         }
