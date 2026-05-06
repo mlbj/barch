@@ -6,9 +6,35 @@ use crate::db;
 use crate::reference::Reference;
 use crate::bibtex::{parse_bibtex_header, extract_field_bibtex, split_bibtex_entries};
 
+use serde::{Serialize, Deserialize};
+
 pub struct ImportResult {
     pub added: usize,
     pub skipped: usize,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct ExportV1 {
+    pub version: u32,
+    pub references: Vec<ExportReference>,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct ExportReference {
+    pub id: String,
+    pub bibtex: String,
+
+    #[serde(default)]
+    pub tags: Vec<String>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub content: Option<ExportContent>,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct ExportContent {
+    pub kind: String,
+    pub location: String,
 }
 
 pub fn add_reference(conn: &Connection, bibtex: &str) -> Result<String> {
@@ -150,4 +176,84 @@ pub fn get_content(
 ) -> Result<(String, String)> {
     let id = db::resolve_reference(conn, input)?;
     db::get_content(conn, &id)
+}
+
+pub fn export_toml(conn: &Connection) -> Result<String> {
+    let raw_refs = db::list_references(conn, None)?;
+
+    let mut references = Vec::new();
+
+    for (id, _key, _title, _tags_str) in raw_refs {
+        let bibtex = db::get_reference(conn, &id)?;
+        let tags = db::get_tags_for_reference(conn, &id)?;
+
+        let content = match db::get_content(conn, &id) {
+            Ok((kind, location)) => Some(ExportContent { kind, location }),
+            Err(_) => None,
+        };
+
+        references.push(ExportReference {
+            id,
+            bibtex,
+            tags,
+            content,
+        });
+    }
+
+    let export = ExportV1 {
+        version: 1,
+        references,
+    };
+
+    Ok(toml::to_string_pretty(&export).unwrap())
+}
+
+pub fn import_toml(conn: &Connection, path: &str) -> Result<()> {
+    let content = std::fs::read_to_string(path)
+        .map_err(|_| rusqlite::Error::InvalidQuery)?;
+
+    let data: ExportV1 = toml::from_str(&content)
+        .map_err(|_| rusqlite::Error::InvalidQuery)?;
+
+    if data.version != 1 {
+        return Err(rusqlite::Error::InvalidQuery);
+    }
+
+    conn.execute_batch(
+        "
+        DELETE FROM reference_tags;
+        DELETE FROM tags;
+        DELETE FROM content;
+        DELETE FROM refs;
+        "
+    )?;
+
+    for r in data.references {
+        let (entry_type, entry_key) =
+            parse_bibtex_header(&r.bibtex)
+                .ok_or(rusqlite::Error::InvalidQuery)?;
+
+        let title = extract_field_bibtex(&r.bibtex, "title");
+
+        db::insert_reference(
+            conn,
+            &r.id,
+            &r.bibtex,
+            &entry_type,
+            &entry_key,
+            title.as_deref(),
+        )?;
+
+        // tags
+        for tag in r.tags {
+            db::insert_tag(conn, &r.id, &tag)?;
+        }
+
+        // content (0 or 1)
+        if let Some(c) = r.content {
+            db::insert_content(conn, &r.id, &c.kind, &c.location)?;
+        }
+    }
+
+    Ok(())
 }

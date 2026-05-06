@@ -40,17 +40,23 @@ pub enum Commands {
         /// Entry key, full id or short id
         input: String },
 
-    /// Export references to reference.bib file
+    /// Export references
     Export {
+        #[arg(long)]
+        toml: bool,
+
         /// Filter by tag
         #[arg(index = 1)]
         tag: Option<String>,
     },
 
-    /// Import references from a .bib file
+    /// Import references
     Import {
-        /// Input BibTeX file
-        filename: String
+        /// Input file
+        filename: String,
+
+        #[arg(long)]
+        toml: bool,
     },
 
     /// Add a tag to a reference
@@ -138,14 +144,24 @@ impl Cli {
                 }
             }
 
-            Commands::Export { tag } => {
-                let content = service::export_references(conn, tag.as_deref())?;
-                fs::write("references.bib", content)?;
+            Commands::Export { tag, toml } => {
+                if toml {
+                    let content = service::export_toml(conn)?;
+                    fs::write("bark.toml", content)?;
+                } else {
+                    let content = service::export_references(conn, tag.as_deref())?;
+                    fs::write("references.bib", content)?;
+                }
             }
 
-            Commands::Import { filename } => {
-                let result = service::import_bibtex(conn, &filename)?;
-                println!("Imported: {} | Skipped: {}", result.added, result.skipped);
+            Commands::Import { filename, toml } => {
+                if toml {
+                    service::import_toml(conn, &filename)?;
+                    println!("Imported TOML snapshot");
+                } else {
+                    let result = service::import_bibtex(conn, &filename)?;
+                    println!("Imported: {} | Skipped: {}", result.added, result.skipped);
+                }
             }
 
             Commands::Tag { input, tag } => {
