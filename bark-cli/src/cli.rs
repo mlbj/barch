@@ -120,11 +120,11 @@ impl Cli {
             }
 
             Commands::List { tag } => {
-                let refs = service::list_references(conn, tag.as_deref())?;
+                let referencess = service::list_references(conn, tag.as_deref())?;
 
-                let max_key = refs.iter().map(|r| r.key.len()).max().unwrap_or(0);
+                let max_key = referencess.iter().map(|r| r.key.len()).max().unwrap_or(0);
 
-                for r in refs {
+                for r in referencess {
                     let short_id = &r.id[..8];
                     let title = r.title.unwrap_or_else(|| "<no title>".to_string());
 

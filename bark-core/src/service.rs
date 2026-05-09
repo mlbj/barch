@@ -136,10 +136,10 @@ pub fn export_references(
     conn: &Connection,
     tag: Option<&str>,
 ) -> Result<String> {
-    let refs = list_references(conn, tag)?;
+    let references = list_references(conn, tag)?;
 
     let mut content = String::new();
-    for r in refs {
+    for r in references {
         let bib = db::get_reference(conn, &r.id)?;
         content.push_str(&bib);
         content.push_str("\n\n");
@@ -179,11 +179,11 @@ pub fn get_content(
 }
 
 pub fn export_toml(conn: &Connection) -> Result<String> {
-    let raw_refs = db::list_references(conn, None)?;
+    let raw_references = db::list_references(conn, None)?;
 
     let mut references = Vec::new();
 
-    for (id, _key, _title, _tags_str) in raw_refs {
+    for (id, _key, _title, _tags_str) in raw_references {
         let bibtex = db::get_reference(conn, &id)?;
         let tags = db::get_tags_for_reference(conn, &id)?;
 
