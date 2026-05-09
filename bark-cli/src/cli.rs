@@ -162,7 +162,7 @@ impl Cli {
 
             Commands::Export { tag, toml } => {
                 if toml {
-                    let content = service::export_toml(conn)?;
+                    let content = service::export_all_toml(conn)?;
                     fs::write("bark.toml", content)?;
                 } else {
                     let content = service::export_bibtex(conn, tag.as_deref())?;

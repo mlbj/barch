@@ -175,7 +175,32 @@ pub fn export_bibtex(conn: &Connection, tag: Option<&str>) -> Result<String> {
     Ok(content)
 }
 
-pub fn export_toml(conn: &Connection) -> Result<String> {
+pub fn export_toml(conn: &Connection, input: &str) -> Result<String> {
+    let id = db::resolve_reference(conn, input)?;
+
+    let bibtex = db::get_reference(conn, &id)?;
+    let tags = db::get_tags_for_reference(conn, &id)?;
+    let content = match db::get_content(conn, &id) {
+        Ok((kind, location)) => Some(ExportContent { kind, location }),
+        Err(_) => None,
+    };
+
+    let export = ExportV1 {
+        version: 1,
+        references: vec![
+            ExportReference {
+                id,
+                bibtex,
+                tags,
+                content,
+            }
+        ],
+    };
+
+    Ok(toml::to_string_pretty(&export).unwrap())
+}
+
+pub fn export_all_toml(conn: &Connection) -> Result<String> {
     let raw_references = db::list_references(conn, None)?;
 
     let mut references = Vec::new();
@@ -183,7 +208,6 @@ pub fn export_toml(conn: &Connection) -> Result<String> {
     for (id, _key, _title, _tags_str) in raw_references {
         let bibtex = db::get_reference(conn, &id)?;
         let tags = db::get_tags_for_reference(conn, &id)?;
-
         let content = match db::get_content(conn, &id) {
             Ok((kind, location)) => Some(ExportContent { kind, location }),
             Err(_) => None,

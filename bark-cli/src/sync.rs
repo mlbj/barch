@@ -32,7 +32,7 @@ pub fn pull(bark: &Bark) -> Result<(), Box<dyn std::error::Error>> {
 pub fn push(bark: &Bark) -> Result<(), Box<dyn std::error::Error>> {
     let dir = get_sync_dir()?;
 
-    let toml_content = service::export_toml(bark.conn())?;
+    let toml_content = service::export_all_toml(bark.conn())?;
 
     std::fs::write(dir.join("bark.toml"), toml_content)?;
 
