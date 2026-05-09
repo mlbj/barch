@@ -17,11 +17,12 @@ pub fn pull(bark: &Bark) -> Result<(), Box<dyn std::error::Error>> {
         .arg("pull")
         .status()?;
 
-    let toml = dir.join("bark.toml");
+    let toml_filename = dir.join("bark.toml");
+    let toml_content = std::fs::read_to_string(&toml_filename)?;
 
     service::import_toml(
         bark.conn(),
-        toml.to_str().unwrap(),
+        &toml_content
     )?;
 
     println!("Sync pull complete");

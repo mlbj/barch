@@ -135,10 +135,7 @@ pub fn get_content(
     db::get_content(conn, &id)
 }
 
-pub fn import_bibtex(conn: &Connection, path: &str) -> Result<ImportResult> {
-    let content = fs::read_to_string(path)
-        .map_err(|_| rusqlite::Error::InvalidQuery)?;
-
+pub fn import_bibtex(conn: &Connection, content: &str) -> Result<ImportResult> {
     let entries = split_bibtex_entries(&content);
 
     let mut added = 0;
@@ -173,6 +170,47 @@ pub fn export_bibtex(conn: &Connection, tag: Option<&str>) -> Result<String> {
     }
 
     Ok(content)
+}
+
+pub fn import_toml(conn: &Connection, content: &str) -> Result<()> {
+    let data: ExportV1 = toml::from_str(&content)
+        .map_err(|_| rusqlite::Error::InvalidQuery)?;
+
+    if data.version != 1 {
+        return Err(rusqlite::Error::InvalidQuery);
+    }
+
+    // Remove all references, their tags and all content
+    db::purge(conn)?;
+
+    for r in data.references {
+        let (entry_type, entry_key) =
+            parse_bibtex_header(&r.bibtex)
+                .ok_or(rusqlite::Error::InvalidQuery)?;
+
+        let title = extract_field_bibtex(&r.bibtex, "title");
+
+        db::insert_reference(
+            conn,
+            &r.id,
+            &r.bibtex,
+            &entry_type,
+            &entry_key,
+            title.as_deref(),
+        )?;
+
+        // tags
+        for tag in r.tags {
+            db::insert_tag(conn, &r.id, &tag)?;
+        }
+
+        // content (0 or 1)
+        if let Some(c) = r.content {
+            db::insert_content(conn, &r.id, &c.kind, &c.location)?;
+        }
+    }
+
+    Ok(())
 }
 
 pub fn export_toml(conn: &Connection, input: &str) -> Result<String> {
@@ -227,48 +265,4 @@ pub fn export_all_toml(conn: &Connection) -> Result<String> {
     };
 
     Ok(toml::to_string_pretty(&export).unwrap())
-}
-
-pub fn import_toml(conn: &Connection, path: &str) -> Result<()> {
-    let content = std::fs::read_to_string(path)
-        .map_err(|_| rusqlite::Error::InvalidQuery)?;
-
-    let data: ExportV1 = toml::from_str(&content)
-        .map_err(|_| rusqlite::Error::InvalidQuery)?;
-
-    if data.version != 1 {
-        return Err(rusqlite::Error::InvalidQuery);
-    }
-
-    // Remove all references, their tags and all content
-    db::purge(conn)?;
-
-    for r in data.references {
-        let (entry_type, entry_key) =
-            parse_bibtex_header(&r.bibtex)
-                .ok_or(rusqlite::Error::InvalidQuery)?;
-
-        let title = extract_field_bibtex(&r.bibtex, "title");
-
-        db::insert_reference(
-            conn,
-            &r.id,
-            &r.bibtex,
-            &entry_type,
-            &entry_key,
-            title.as_deref(),
-        )?;
-
-        // tags
-        for tag in r.tags {
-            db::insert_tag(conn, &r.id, &tag)?;
-        }
-
-        // content (0 or 1)
-        if let Some(c) = r.content {
-            db::insert_content(conn, &r.id, &c.kind, &c.location)?;
-        }
-    }
-
-    Ok(())
 }

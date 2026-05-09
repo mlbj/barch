@@ -171,25 +171,26 @@ impl Cli {
             }
 
             Commands::Import { filename, toml } => {
-                // Force TOML import
-                if toml {
-                    service::import_toml(conn, &filename)?;
-                    println!("Imported TOML snapshot");
-                    return Ok(());
-                }
+                let content = std::fs::read_to_string(&filename)?;
+                let path = std::path::Path::new(&filename);
+                let extension = path.extension().and_then(|s| s.to_str());
 
-                // Try to guess by extension or fail loud
-                if filename.ends_with(".toml") {
-                    service::import_toml(conn, &filename)?;
-                    println!("Imported TOML snapshop");
-                } else if filename.ends_with(".bib") {
-                    let result = service::import_bibtex(conn, &filename)?;
-                    println!("Imported: {} | Skipped: {}", result.added, result.skipped);
-                } else {
-                    return Err(format!(
-                        "Could not infer format from '{}'. Use --toml or provide a .bib/.toml file",
-                        filename
-                    ).into());
+                match (toml, extension) {
+                    (true, _) | (false, Some("toml")) => {
+                        service::import_toml(conn, &content)?;
+                        println!("Imported TOML snapshot");
+                    }
+                    (false, Some("bib")) => {
+
+                        let result = service::import_bibtex(conn, &content)?;
+                        println!("Imported: {} | Skipped: {}", result.added, result.skipped);
+                    }
+                    _ => {
+                        return Err(format!(
+                            "Could not infer format from '{}'. Use --toml or provide a .bib/.toml file",
+                            filename
+                        ).into());
+                    }
                 }
             }
 
