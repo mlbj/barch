@@ -91,6 +91,50 @@ pub fn list_references(
     Ok(result)
 }
 
+pub fn resolve_reference(conn: &Connection, input: &str) -> Result<String> {
+    db::resolve_reference(conn, input)
+}
+
+pub fn get_reference(conn: &Connection, input: &str) -> Result<String> {
+    let id = db::resolve_reference(conn, input)?;
+    db::get_reference(conn, &id)
+}
+
+pub fn add_tag(conn: &Connection, input: &str, tag: &str) -> Result<()> {
+    let id = db::resolve_reference(conn, input)?;
+    db::insert_tag(conn, &id, tag)
+}
+
+fn infer_content_kind(location: &str) -> &str {
+    if location.starts_with("http://") || location.starts_with("https://") {
+        "url"
+    } else if location.contains('@') && location.contains(':') {
+        // Simple ssh heuristic for now
+        "ssh"
+    } else {
+        "local"
+    }
+}
+
+pub fn add_content(
+    conn: &Connection,
+    input: &str,
+    location: &str,
+) -> Result<()> {
+    let id = db::resolve_reference(conn, input)?;
+    let kind = infer_content_kind(location);
+
+    db::insert_content(conn, &id, kind, location)
+}
+
+pub fn get_content(
+    conn: &Connection,
+    input: &str,
+) -> Result<(String, String)> {
+    let id = db::resolve_reference(conn, input)?;
+    db::get_content(conn, &id)
+}
+
 pub fn import_bibtex(conn: &Connection, path: &str) -> Result<ImportResult> {
     let content = fs::read_to_string(path)
         .map_err(|_| rusqlite::Error::InvalidQuery)?;
@@ -129,50 +173,6 @@ pub fn export_bibtex(conn: &Connection, tag: Option<&str>) -> Result<String> {
     }
 
     Ok(content)
-}
-
-pub fn resolve_reference(conn: &Connection, input: &str) -> Result<String> {
-    db::resolve_reference(conn, input)
-}
-
-pub fn get_reference(conn: &Connection, input: &str) -> Result<String> {
-    let id = db::resolve_reference(conn, input)?;
-    db::get_reference(conn, &id)
-}
-
-pub fn add_tag(conn: &Connection, input: &str, tag: &str) -> Result<()> {
-    let id = db::resolve_reference(conn, input)?;
-    db::insert_tag(conn, &id, tag)
-}
-
-fn infer_kind(location: &str) -> &str {
-    if location.starts_with("http://") || location.starts_with("https://") {
-        "url"
-    } else if location.contains('@') && location.contains(':') {
-        // Simple ssh heuristic for now
-        "ssh"
-    } else {
-        "local"
-    }
-}
-
-pub fn add_content(
-    conn: &Connection,
-    input: &str,
-    location: &str,
-) -> Result<()> {
-    let id = db::resolve_reference(conn, input)?;
-    let kind = infer_kind(location);
-
-    db::insert_content(conn, &id, kind, location)
-}
-
-pub fn get_content(
-    conn: &Connection,
-    input: &str,
-) -> Result<(String, String)> {
-    let id = db::resolve_reference(conn, input)?;
-    db::get_content(conn, &id)
 }
 
 pub fn export_toml(conn: &Connection) -> Result<String> {
