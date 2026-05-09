@@ -118,6 +118,19 @@ pub fn import_bibtex(conn: &Connection, path: &str) -> Result<ImportResult> {
     Ok(ImportResult { added, skipped })
 }
 
+pub fn export_bibtex(conn: &Connection, tag: Option<&str>) -> Result<String> {
+    let references = list_references(conn, tag)?;
+
+    let mut content = String::new();
+    for r in references {
+        let bib = db::get_reference(conn, &r.id)?;
+        content.push_str(&bib);
+        content.push_str("\n\n");
+    }
+
+    Ok(content)
+}
+
 pub fn resolve_reference(conn: &Connection, input: &str) -> Result<String> {
     db::resolve_reference(conn, input)
 }
@@ -130,22 +143,6 @@ pub fn get_reference(conn: &Connection, input: &str) -> Result<String> {
 pub fn add_tag(conn: &Connection, input: &str, tag: &str) -> Result<()> {
     let id = db::resolve_reference(conn, input)?;
     db::insert_tag(conn, &id, tag)
-}
-
-pub fn export_references(
-    conn: &Connection,
-    tag: Option<&str>,
-) -> Result<String> {
-    let references = list_references(conn, tag)?;
-
-    let mut content = String::new();
-    for r in references {
-        let bib = db::get_reference(conn, &r.id)?;
-        content.push_str(&bib);
-        content.push_str("\n\n");
-    }
-
-    Ok(content)
 }
 
 fn infer_kind(location: &str) -> &str {

@@ -165,7 +165,7 @@ impl Cli {
                     let content = service::export_toml(conn)?;
                     fs::write("bark.toml", content)?;
                 } else {
-                    let content = service::export_references(conn, tag.as_deref())?;
+                    let content = service::export_bibtex(conn, tag.as_deref())?;
                     fs::write("references.bib", content)?;
                 }
             }
