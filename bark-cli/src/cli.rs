@@ -93,7 +93,7 @@ pub enum Commands {
 
     /// Sync bark library using a git repository
     Sync {
-        /// pull or push actions
+        /// Restore or push actions
         #[command(subcommand)]
         action: SyncAction,
     },
@@ -101,7 +101,7 @@ pub enum Commands {
 
 #[derive(Subcommand)]
 pub enum SyncAction {
-    Pull,
+    Restore,
     Push,
 }
 
@@ -250,7 +250,7 @@ impl Cli {
 
             Commands::Sync { action } => {
                 match action {
-                    SyncAction::Pull => sync::pull(bark)?,
+                    SyncAction::Restore => sync::restore(bark)?,
                     SyncAction::Push => sync::push(bark)?,
                 }
             }

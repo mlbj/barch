@@ -1,14 +1,17 @@
 use std::process::Command;
 use std::path::PathBuf;
 
-use bark_core::{service, Bark};
+use bark_core::{service, db, Bark};
 
 fn get_sync_dir() -> Result<PathBuf, Box<dyn std::error::Error>> {
     let dir = std::env::var("BARK_SYNC_DIR")?;
     Ok(PathBuf::from(dir))
 }
 
-pub fn pull(bark: &Bark) -> Result<(), Box<dyn std::error::Error>> {
+pub fn restore(bark: &Bark) -> Result<(), Box<dyn std::error::Error>> {
+    // Delete everything first
+    db::purge(bark.conn());
+
     let dir = get_sync_dir()?;
 
     Command::new("git")
@@ -25,7 +28,7 @@ pub fn pull(bark: &Bark) -> Result<(), Box<dyn std::error::Error>> {
         &toml_content
     )?;
 
-    println!("Sync pull complete");
+    println!("Sync restore complete");
 
     Ok(())
 }
@@ -33,7 +36,7 @@ pub fn pull(bark: &Bark) -> Result<(), Box<dyn std::error::Error>> {
 pub fn push(bark: &Bark) -> Result<(), Box<dyn std::error::Error>> {
     let dir = get_sync_dir()?;
 
-    let toml_content = service::export_all_toml(bark.conn())?;
+    let toml_content = service::export_toml_by_tag(bark.conn(), None)?;
 
     std::fs::write(dir.join("bark.toml"), toml_content)?;
 

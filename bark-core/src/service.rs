@@ -279,33 +279,3 @@ pub fn export_toml_by_tag(
     
     Ok(toml::to_string_pretty(&export).unwrap())
 }
-
-
-pub fn export_all_toml(conn: &Connection) -> Result<String> {
-    let raw_references = db::list_references(conn, None)?;
-
-    let mut references = Vec::new();
-
-    for (id, _key, _title, _tags_str) in raw_references {
-        let bibtex = db::get_reference(conn, &id)?;
-        let tags = db::get_tags_for_reference(conn, &id)?;
-        let content = match db::get_content(conn, &id) {
-            Ok((kind, location)) => Some(ExportContent { kind, location }),
-            Err(_) => None,
-        };
-
-        references.push(ExportReference {
-            id,
-            bibtex,
-            tags,
-            content,
-        });
-    }
-
-    let export = ExportV1 {
-        version: 1,
-        references,
-    };
-
-    Ok(toml::to_string_pretty(&export).unwrap())
-}
