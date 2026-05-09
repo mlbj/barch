@@ -19,5 +19,7 @@ library.db
 .DS_Store
 Thumbs.db
 
-# Export artifacts
+# Export artifacts/ user data
 references.bib
+bark.toml
+*.pdf
