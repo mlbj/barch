@@ -111,13 +111,29 @@ impl Cli {
 
         match self.command {
             Commands::Add => {
-                println!("Paste BibTeX, Ctrl+D to finish:\n");
+                let editor = env::var("BARK_TEXT_EDITOR")
+                    .unwrap_or_else(|_| "vim".to_string());
 
-                let mut input = String::new();
-                io::stdin().read_to_string(&mut input)?;
+                let tmp_path = env::temp_dir().join("bark_add.bib");
+
+                // Optional template
+                fs::write(&tmp_path, "")?;
+
+                Command::new(&editor)
+                    .arg(&tmp_path)
+                    .status()?;
+
+                let input = fs::read_to_string(&tmp_path)?;
+
+                if input.trim().is_empty() {
+                    println!("Aborted (empty entry)");
+                    return Ok(());
+                }
 
                 let id = service::add_reference(conn, &input)?;
                 println!("Saved as {}", id);
+
+                fs::remove_file(&tmp_path).ok();
             }
 
             Commands::Rm { input } => {
