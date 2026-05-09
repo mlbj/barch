@@ -67,7 +67,7 @@ pub fn remove_reference(
 }
 
 
-pub fn list_references(
+pub fn list_references_and_data(
     conn: &Connection,
     tag: Option<&str>,
 ) -> Result<Vec<Reference>> {
@@ -159,8 +159,18 @@ pub fn import_bibtex(conn: &Connection, content: &str) -> Result<ImportResult> {
     Ok(ImportResult { added, skipped })
 }
 
-pub fn export_bibtex(conn: &Connection, tag: Option<&str>) -> Result<String> {
-    let references = list_references(conn, tag)?;
+pub fn export_bibtex(conn: &Connection, input: &str) -> Result<String> {
+    let id = db::resolve_reference(conn, input)?;
+    let bib = db::get_reference(conn, &id)?;
+    
+    Ok(bib)
+}
+
+pub fn export_bibtex_by_tag(
+    conn: &Connection,
+    tag: Option<&str>
+) -> Result<String> {
+    let references = list_references_and_data(conn, tag)?;
 
     let mut content = String::new();
     for r in references {
@@ -237,6 +247,39 @@ pub fn export_toml(conn: &Connection, input: &str) -> Result<String> {
 
     Ok(toml::to_string_pretty(&export).unwrap())
 }
+
+pub fn export_toml_by_tag(
+    conn: &Connection, 
+    tag: Option<&str>,
+) -> Result<String> {
+    let raw_references = db::list_references(conn, tag)?;
+    
+    let mut references = Vec::new();
+
+    for (id, _key, _title, _tags_str) in raw_references {
+        let bibtex = db::get_reference(conn, &id)?;
+        let tags = db::get_tags_for_reference(conn, &id)?;
+        let content = match db::get_content(conn, &id) {
+            Ok((kind, location)) => Some(ExportContent { kind, location }),
+            Err(_) => None,
+        };
+
+        references.push(ExportReference {
+            id,
+            bibtex,
+            tags,
+            content,
+        });
+    }
+
+    let export = ExportV1 {
+        version: 1,
+        references,
+    };
+    
+    Ok(toml::to_string_pretty(&export).unwrap())
+}
+
 
 pub fn export_all_toml(conn: &Connection) -> Result<String> {
     let raw_references = db::list_references(conn, None)?;

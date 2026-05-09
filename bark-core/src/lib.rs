@@ -7,8 +7,13 @@ pub mod bibtex;
 // Re-export API
 pub use service::{
     add_reference,
-    list_references,
+    list_references_and_data,
     import_bibtex,
+    export_bibtex,
+    export_bibtex_by_tag,
+    import_toml,
+    export_toml,
+    export_toml_by_tag,
     resolve_reference,
     get_reference,
     ImportResult,

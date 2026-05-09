@@ -45,12 +45,17 @@ pub enum Commands {
 
     /// Export references
     Export {
-        #[arg(long)]
-        toml: bool,
+        /// Entry key, full id or short id
+        #[arg(index = 1)]
+        input: Option<String>,
 
         /// Filter by tag
-        #[arg(index = 1)]
+        #[arg(long)]
         tag: Option<String>,
+        
+        /// Export TOML snapshot
+        #[arg(long)]
+        toml: bool,
     },
 
     /// Import references
@@ -120,7 +125,7 @@ impl Cli {
             }
 
             Commands::List { tag } => {
-                let referencess = service::list_references(conn, tag.as_deref())?;
+                let referencess = service::list_references_and_data(conn, tag.as_deref())?;
 
                 let max_key = referencess.iter().map(|r| r.key.len()).max().unwrap_or(0);
 
@@ -160,12 +165,22 @@ impl Cli {
                 }
             }
 
-            Commands::Export { tag, toml } => {
+            Commands::Export { input, tag, toml } => {
                 if toml {
-                    let content = service::export_all_toml(conn)?;
+                    let content = if let Some(input) = input {
+                        service::export_toml(conn, &input)?
+                    } else {
+                        service::export_toml_by_tag(conn, tag.as_deref())?
+                    };
+
                     fs::write("bark.toml", content)?;
                 } else {
-                    let content = service::export_bibtex(conn, tag.as_deref())?;
+                    let content = if let Some(input) = input {
+                        service::export_bibtex(conn, &input)?
+                    } else {
+                        service::export_bibtex_by_tag(conn, tag.as_deref())?
+                    };
+
                     fs::write("references.bib", content)?;
                 }
             }
