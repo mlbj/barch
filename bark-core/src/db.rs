@@ -69,6 +69,19 @@ pub fn remove_reference(conn: &Connection, id: &str) -> Result<()> {
     Ok(())
 }
 
+pub fn purge(conn: &Connection) -> Result<()> {
+    conn.execute_batch(
+        "
+        DELETE FROM reference_tags;
+        DELETE FROM tags;
+        DELETE FROM content;
+        DELETE FROM refs;
+        "
+    )?;
+
+    Ok(())
+}
+
 pub fn list_references(
     conn: &Connection,
     tag: Option<&str>,

@@ -216,14 +216,8 @@ pub fn import_toml(conn: &Connection, path: &str) -> Result<()> {
         return Err(rusqlite::Error::InvalidQuery);
     }
 
-    conn.execute_batch(
-        "
-        DELETE FROM reference_tags;
-        DELETE FROM tags;
-        DELETE FROM content;
-        DELETE FROM refs;
-        "
-    )?;
+    // Remove all references, their tags and all content
+    db::purge(conn)?;
 
     for r in data.references {
         let (entry_type, entry_key) =
