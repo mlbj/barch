@@ -15,17 +15,6 @@ pub fn init_db(path: &str) -> Result<Connection> {
             created_at TEXT DEFAULT CURRENT_TIMESTAMP
         );
 
-        CREATE TABLE IF NOT EXISTS files (
-            id TEXT PRIMARY KEY,
-            path TEXT NOT NULL
-        );
-
-        CREATE TABLE IF NOT EXISTS reference_files (
-            reference_id TEXT,
-            file_id TEXT,
-            PRIMARY KEY (reference_id, file_id)
-        );
-
         CREATE TABLE IF NOT EXISTS tags (
             id TEXT PRIMARY KEY,
             name TEXT UNIQUE NOT NULL
