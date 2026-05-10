@@ -31,6 +31,12 @@ pub enum Commands {
         input: String,
     },
 
+    /// Edit a reference
+    Edit {
+        /// Entry key, full id or short id
+        input: String,
+    },
+
     /// List stored references
     List {
         /// Filter by tag
@@ -150,13 +156,40 @@ location = ""
                     return Ok(());
                 }
                 service::import_toml(conn, &input)?;
-                println!("Imported reference");
+                println!("Reference imported");
 
                 fs::remove_file(&tmp_path).ok();
             }
 
             Commands::Rm { input } => {
                 service::remove_reference(conn, &input)?;
+            }
+
+            Commands::Edit { input } => {
+                let editor = env::var("BARK_TEXT_EDITOR")
+                    .unwrap_or_else(|_| "vim".to_string());
+
+                let tmp_path = env::temp_dir().join("bark_add.toml");
+
+                let content = service::export_toml(conn, &input)?;
+
+                fs::write(&tmp_path, content);
+
+                Command::new(&editor)
+                    .arg(&tmp_path)
+                    .status()?;
+
+                let input = fs::read_to_string(&tmp_path)?;
+
+                if input.trim().is_empty() {
+                    println!("Aborted (empty entry)");
+                    return Ok(());
+                }
+                service::import_toml(conn, &input)?;
+                println!("Reference saved");
+
+                fs::remove_file(&tmp_path).ok();
+
             }
 
             Commands::List { tag } => {
