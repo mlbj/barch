@@ -5,7 +5,7 @@ edition = "2024"
 license = "MIT"
 
 [dependencies]
-bark-core = { path = "../bark-core" }
+bark-core = { path = "../core" }
 clap = { version = "4", features = ["derive"] }
 directories = "5"
 
