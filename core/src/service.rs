@@ -75,14 +75,15 @@ pub fn list_references_and_data(
 
     let mut result = Vec::new();
 
-    for (id, key, title, tags) in raw {
+    for (id, entry_key, entry_type, title, tags) in raw {
         let tags_vec = tags
             .map(|t| t.split(',').map(|s| s.to_string()).collect())
             .unwrap_or_else(Vec::new);
 
         result.push(Reference {
             id,
-            key,
+            entry_key,
+            entry_type,
             title,
             tags: tags_vec,
         });
@@ -142,7 +143,7 @@ pub fn import_bibtex(conn: &Connection, content: &str) -> Result<ImportResult> {
     let mut skipped = 0;
 
     for entry in entries {
-        let (_ty, key) = match parse_bibtex_header(&entry) {
+        let (_entry_type, _entry_key) = match parse_bibtex_header(&entry) {
             Some(v) => v,
             None => {
                 skipped += 1;
@@ -275,7 +276,7 @@ pub fn export_toml_by_tag(
     
     let mut references = Vec::new();
 
-    for (id, _key, _title, _tags_str) in raw_references {
+    for (id, _entry_key, _entry_type, _title, _tags_str) in raw_references {
         let bibtex = db::get_reference(conn, &id)?;
         let tags = db::get_tags_for_reference(conn, &id)?;
         let content = match db::get_content(conn, &id) {

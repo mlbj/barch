@@ -193,27 +193,61 @@ location = ""
             }
 
             Commands::List { tag } => {
-                let referencess = service::list_references_and_data(conn, tag.as_deref())?;
+                let references = service::list_references_and_data(conn, tag.as_deref())?;
 
-                let max_key = referencess.iter().map(|r| r.key.len()).max().unwrap_or(0);
+                let max_type = references
+                    .iter()
+                    .map(|r| r.entry_type.len())
+                    .max()
+                    .unwrap_or(0);
 
-                for r in referencess {
-                    let short_id = &r.id[..8];
-                    let title = r.title.unwrap_or_else(|| "<no title>".to_string());
+                let max_key = references
+                    .iter()
+                    .map(|r| r.entry_key.len())
+                    .max()
+                    .unwrap_or(0);
 
-                    let tag_str = if r.tags.is_empty() {
+                let max_tags = references
+                    .iter()
+                    .map(|r| r.tags.join(", ").len())
+                    .max()
+                    .unwrap_or(0) + 2;
+
+                let max_title = references
+                    .iter()
+                    .map(|r| {
+                        r.title
+                            .as_deref()
+                            .unwrap_or("<no title>")
+                            .len()
+                    })
+                    .max()
+                    .unwrap_or(0);
+                    
+
+                for r in references {
+                    // Currently not used 
+                    //let short_id = &r.id[..8];
+
+                    let title =
+                        r.title.unwrap_or_else(|| "<no title>".to_string());
+                    
+                    let tags = if r.tags.is_empty() {
                         String::new()
                     } else {
-                        format!(" [{}]", r.tags.join(", "))
+                        format!("[{}]", r.tags.join(", "))
                     };
 
                     println!(
-                        "{:8}  {:width$}  {}{}",
-                        short_id,
-                        r.key,
+                        "{:type_width$}  {:key_width$}  {:title_width$}  {:tags_width$}  ",
+                        r.entry_type,
+                        r.entry_key,
                         title,
-                        tag_str,
-                        width = max_key,
+                        tags,
+                        type_width = max_type,
+                        key_width = max_key,
+                        title_width = max_title,
+                        tags_width = max_tags,
                     );
                 }
             }

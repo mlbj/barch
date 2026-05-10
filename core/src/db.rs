@@ -85,13 +85,14 @@ pub fn purge(conn: &Connection) -> Result<()> {
 pub fn list_references(
     conn: &Connection,
     tag: Option<&str>,
-) -> Result<Vec<(String, String, Option<String>, Option<String>)>> {
+) -> Result<Vec<(String, String, String, Option<String>, Option<String>)>> {
 
     let mut stmt = conn.prepare(
         "
         SELECT
             r.id,
             r.entry_key,
+            r.entry_type,
             r.title,
             GROUP_CONCAT(t.name)
         FROM refs r
@@ -110,10 +111,11 @@ pub fn list_references(
 
     let rows = stmt.query_map([tag], |row| {
         let id: String = row.get(0)?;
-        let key: String = row.get(1)?;
-        let title: Option<String> = row.get(2)?;
-        let tags: Option<String> = row.get(3)?;
-        Ok((id, key, title, tags))
+        let entry_key: String = row.get(1)?;
+        let entry_type: String = row.get(2)?;
+        let title: Option<String> = row.get(3)?;
+        let tags: Option<String> = row.get(4)?;
+        Ok((id, entry_key, entry_type, title, tags))
     })?;
 
     let mut result = Vec::new();
