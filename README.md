@@ -7,8 +7,7 @@ BibTex entries and associated files.
 
 Right now, bark only has a simple CLI that can be built by running 
 ```bash
- cargo
-install --path bark-cli --force
+cargo install --path cli --force
 ```
 This will compile in release mode and
 install the binary to `~/.cargo/bin/bark`.
