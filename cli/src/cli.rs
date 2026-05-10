@@ -101,7 +101,10 @@ pub enum Commands {
 
 #[derive(Subcommand)]
 pub enum SyncAction {
+    /// Force pull database from remote sync repository
     Restore,
+
+    /// Push local database to remote sync repository 
     Push,
 }
 
