@@ -117,29 +117,24 @@ impl Cli {
                 let tmp_path = env::temp_dir().join("bark_add.toml");
 
                 // Default TOML template
-                let template = r#"
-                version = 1
+                let template = r#"version = 1
 
-                [[references]]
-                id = ""
+[[references]]
+id = ""
+bibtex = """
+@article{key,
+  author = {},
+  title = {},
+  year = {},
+}"""
+tags = []
 
-                bibtex = """
-                @article{key,
-                  author = {},
-                  title = {},
-                  year = {},
-                }
-                """
+[references.content]
+kind = ""
+location = ""
+"#;
 
-                tags = []
-
-                [references.content]
-                kind = ""
-                location = ""
-                "#;
-                
                 fs::write(&tmp_path, template);
-
 
                 Command::new(&editor)
                     .arg(&tmp_path)
@@ -151,9 +146,8 @@ impl Cli {
                     println!("Aborted (empty entry)");
                     return Ok(());
                 }
-
-                let id = service::add_reference(conn, &input)?;
-                println!("Saved as {}", id);
+                service::import_toml(conn, &input)?;
+                println!("Imported reference");
 
                 fs::remove_file(&tmp_path).ok();
             }
