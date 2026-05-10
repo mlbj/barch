@@ -114,10 +114,32 @@ impl Cli {
                 let editor = env::var("BARK_TEXT_EDITOR")
                     .unwrap_or_else(|_| "vim".to_string());
 
-                let tmp_path = env::temp_dir().join("bark_add.bib");
+                let tmp_path = env::temp_dir().join("bark_add.toml");
 
-                // Optional template
-                fs::write(&tmp_path, "")?;
+                // Default TOML template
+                let template = r#"
+                version = 1
+
+                [[references]]
+                id = ""
+
+                bibtex = """
+                @article{key,
+                  author = {},
+                  title = {},
+                  year = {},
+                }
+                """
+
+                tags = []
+
+                [references.content]
+                kind = ""
+                location = ""
+                "#;
+                
+                fs::write(&tmp_path, template);
+
 
                 Command::new(&editor)
                     .arg(&tmp_path)
@@ -209,7 +231,7 @@ impl Cli {
                 match (toml, extension) {
                     (true, _) | (false, Some("toml")) => {
                         service::import_toml(conn, &content)?;
-                        println!("Imported TOML snapshot");
+                        println!("Imported TOML reference(s)");
                     }
                     (false, Some("bib")) => {
 

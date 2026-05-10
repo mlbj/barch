@@ -21,7 +21,7 @@ pub struct ExportV1 {
 
 #[derive(Serialize, Deserialize)]
 pub struct ExportReference {
-    pub id: String,
+    pub id: Option<String>,
     pub bibtex: String,
 
     #[serde(default)]
@@ -190,19 +190,31 @@ pub fn import_toml(conn: &Connection, content: &str) -> Result<()> {
         return Err(rusqlite::Error::InvalidQuery);
     }
 
-    // Remove all references, their tags and all content
-    db::purge(conn)?;
-
     for r in data.references {
         let (entry_type, entry_key) =
             parse_bibtex_header(&r.bibtex)
                 .ok_or(rusqlite::Error::InvalidQuery)?;
 
         let title = extract_field_bibtex(&r.bibtex, "title");
+        
+        // Generate UUID if empty
+        let id = match &r.id {
+            Some(id) if !id.trim().is_empty() => id.clone(),
+            _ => uuid::Uuid::new_v4().to_string(),
+        };
+
+        // If reference already exists, remove it first
+        if db::reference_exists(conn, &id)? {
+            db::remove_reference(conn, &id)?;
+        } else if let Ok(existing_id) =
+            db::resolve_reference(conn, &entry_key)
+        {
+            db::remove_reference(conn, &existing_id)?;
+        }
 
         db::insert_reference(
             conn,
-            &r.id,
+            &id,
             &r.bibtex,
             &entry_type,
             &entry_key,
@@ -211,12 +223,17 @@ pub fn import_toml(conn: &Connection, content: &str) -> Result<()> {
 
         // tags
         for tag in r.tags {
-            db::insert_tag(conn, &r.id, &tag)?;
+            if !tag.trim().is_empty() {
+                db::insert_tag(conn, &id, &tag)?;
+            }
         }
 
-        // content (0 or 1)
+        // content
         if let Some(c) = r.content {
-            db::insert_content(conn, &r.id, &c.kind, &c.location)?;
+            if !c.kind.trim().is_empty()
+                && !c.location.trim().is_empty() {
+                db::insert_content(conn, &id, &c.kind, &c.location)?;
+            }
         }
     }
 
@@ -229,7 +246,9 @@ pub fn export_toml(conn: &Connection, input: &str) -> Result<String> {
     let bibtex = db::get_reference(conn, &id)?;
     let tags = db::get_tags_for_reference(conn, &id)?;
     let content = match db::get_content(conn, &id) {
-        Ok((kind, location)) => Some(ExportContent { kind, location }),
+        Ok((kind, location)) => {
+            Some(ExportContent { kind, location })
+        }
         Err(_) => None,
     };
 
@@ -237,7 +256,7 @@ pub fn export_toml(conn: &Connection, input: &str) -> Result<String> {
         version: 1,
         references: vec![
             ExportReference {
-                id,
+                id: Some(id),
                 bibtex,
                 tags,
                 content,
@@ -265,7 +284,7 @@ pub fn export_toml_by_tag(
         };
 
         references.push(ExportReference {
-            id,
+            id: Some(id),
             bibtex,
             tags,
             content,

@@ -124,6 +124,16 @@ pub fn list_references(
     Ok(result)
 }
 
+pub fn reference_exists(conn: &Connection, id: &str) -> Result<bool> {
+    let mut stmt = conn.prepare(
+        "SELECT 1 FROM refs WHERE id = ?1"
+    )?;
+
+    let mut rows = stmt.query([id])?;
+
+    Ok(rows.next()?.is_some())
+}
+
 pub fn resolve_reference(conn: &Connection, input: &str) -> Result<String> {
     // Exact match on entry_key
     let mut stmt = conn.prepare(
