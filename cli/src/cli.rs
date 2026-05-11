@@ -1,7 +1,7 @@
 use clap::{Parser, Subcommand, CommandFactory};
 use clap_complete::{
     generate,
-    shells::{Bash, Zsh, Fish},
+    shells::{Bash},
 };
 
 use std::io::{self, Read};
@@ -112,6 +112,12 @@ pub enum Commands {
     Completions {
         /// Target shell
         shell: String,
+    },
+
+    #[command(hide = true)]
+    Complete {
+        kind: String,
+        partial: Option<String>,
     },
 }
 
@@ -369,12 +375,61 @@ location = ""
 
             Commands::Completions { shell } => {
                 let mut cmd = Cli::command();
+                let mut buf = Vec::new();
 
                 match shell.as_str() {
-                    "bash" => generate(Bash, &mut cmd, "bark", &mut std::io::stdout()),
-                    "zsh" => generate(Bash, &mut cmd, "bark", &mut std::io::stdout()),
-                    "fish" => generate(Bash, &mut cmd, "bark", &mut std::io::stdout()),
+                    "bash" => {
+                        generate(Bash, &mut cmd, "bark", &mut buf);
+
+                        let script = String::from_utf8(buf).unwrap();
+
+                        print!("{}", script);
+
+                        print!(r#"
+
+_bark_custom()
+{{
+    local cur="${{COMP_WORDS[COMP_CWORD]}}"
+    local prev="${{COMP_WORDS[COMP_CWORD-1]}}"
+
+    # complete subcommands
+    if [[ $COMP_CWORD -eq 1 ]]; then
+        COMPREPLY=($(compgen -W \
+            "add attach edit export import list open rm show completions complete" \
+            -- "$cur"))
+        return
+    fi
+
+    # complete reference keys
+    case "$prev" in
+        open|show|rm|edit|attach|export)
+            COMPREPLY=(
+                $(compgen -W "$(bark complete refs "$cur")" -- "$cur")
+            )
+            return
+            ;;
+    esac
+}}
+
+complete -F _bark_custom bark
+
+"#);
+                    }
+
                     _ => eprintln!("unsupported shell"),
+                }
+            }
+
+            Commands::Complete { kind, partial } => {
+                let partial = partial.unwrap_or_default();
+
+                match kind.as_str() {
+                    "refs" => {
+                        for key in service::complete_entry_keys(conn, &partial)? {
+                            println!("{}", key);
+                        }
+                    }
+                    _ => {}
                 }
             }
         }

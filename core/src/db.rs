@@ -278,3 +278,31 @@ pub fn get_content(
         Err(rusqlite::Error::QueryReturnedNoRows)
     }
 }
+
+pub fn complete_entry_keys(
+    conn: &Connection,
+    partial: &str,
+) -> Result<Vec<String>> {
+    let pattern = format!("{}%", partial);
+
+    let mut stmt = conn.prepare(
+        "
+        SELECT entry_key
+        FROM refs
+        WHERE entry_key LIKE ?1
+        ORDER BY entry_key
+        "
+    )?;
+
+    let rows = stmt.query_map([pattern], |row| {
+        row.get(0)
+    })?;
+
+    let mut result = Vec::new();
+
+    for row in rows {
+        result.push(row?);
+    }
+
+    Ok(result)
+}

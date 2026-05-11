@@ -299,3 +299,10 @@ pub fn export_toml_by_tag(
     
     Ok(toml::to_string_pretty(&export).unwrap())
 }
+
+pub fn complete_entry_keys(
+    conn: &Connection,
+    partial: &str,
+) -> Result<Vec<String>> {
+    db::complete_entry_keys(conn, partial)
+}
