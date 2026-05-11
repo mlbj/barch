@@ -34,7 +34,7 @@ export BARK_SYNC_DIR=~/bark-sync
 Then sync normally with
 ```bash
 bark sync push
-bark sync pull
+bark sync restore
 ```
 For the first push, you will need to set the upstream branch manually
 ```bash
