@@ -7,6 +7,7 @@ license = "MIT"
 [dependencies]
 bark-core = { path = "../core" }
 clap = { version = "4", features = ["derive"] }
+clap_complete = "4"
 directories = "5"
 
 [[bin]]

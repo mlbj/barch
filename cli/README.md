@@ -1,5 +1,20 @@
 # bark-cli
 
+### Shell completions
+
+For bash, install `bash-completion` if needed, then run
+```bash
+mkdir -p ~/.local/share/bash-completion/completions/
+bark completions bash > ~/.local/share/bash-completion/completions/bark
+```
+
+Reopen bash or run
+```bash
+source ~/.local/share/bash-completion/completions/bark
+```
+
+Subcommand and `entry_key` completions should now work.
+
 ### Sync
 
 Currently, syncing across different devices can be done using a git repository. Run

@@ -1,4 +1,8 @@
-use clap::{Parser, Subcommand};
+use clap::{Parser, Subcommand, CommandFactory};
+use clap_complete::{
+    generate,
+    shells::{Bash, Zsh, Fish},
+};
 
 use std::io::{self, Read};
 use std::fs;
@@ -102,6 +106,12 @@ pub enum Commands {
         /// Restore or push actions
         #[command(subcommand)]
         action: SyncAction,
+    },
+
+    /// Generate command completion file
+    Completions {
+        /// Target shell
+        shell: String,
     },
 }
 
@@ -354,6 +364,17 @@ location = ""
                 match action {
                     SyncAction::Restore => sync::restore(bark)?,
                     SyncAction::Push => sync::push(bark)?,
+                }
+            }
+
+            Commands::Completions { shell } => {
+                let mut cmd = Cli::command();
+
+                match shell.as_str() {
+                    "bash" => generate(Bash, &mut cmd, "bark", &mut std::io::stdout()),
+                    "zsh" => generate(Bash, &mut cmd, "bark", &mut std::io::stdout()),
+                    "fish" => generate(Bash, &mut cmd, "bark", &mut std::io::stdout()),
+                    _ => eprintln!("unsupported shell"),
                 }
             }
         }
